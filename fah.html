@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arfah | Pengelola Keuangan & Data Pelajar</title>
+    <link rel="stylesheet" href="Fahps.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Aplikasi Pengelola Keuangan & Data Pelajar</h1>
+
+    <!-- ===== BAGIAN KEUANGAN ===== -->
+    <div class="section">
+        <h2>Pencatatan Keuangan</h2>
+        <div class="summary">
+            <div class="income">
+                <h3>Total Pemasukan</h3>
+                <p id="total-income">Rp 0</p>
+            </div>
+            <div class="expense">
+                <h3>Total Pengeluaran</h3>
+                <p id="total-expense">Rp 0</p>
+            </div>
+            <div class="balance">
+                <h3>Saldo Saya</h3>
+                <p id="total-balance">Rp 0</p>
+            </div>
+        </div>
+
+        <form id="finance-form">
+            <label>Deskripsi</label>
+            <input type="text" id="finance-description" required>
+            <label>Jumlah (Rp)</label>
+            <input type="number" id="finance-amount" required>
+            <label>Jenis</label>
+            <select id="finance-type" required>
+                <option value="income">Pemasukan</option>
+                <option value="expense">Pengeluaran</option>
+            </select>
+            <label>Kategori</label>
+            <select id="finance-category" required>
+                <option value="uang">Uang</option>
+                <option value="barang">Barang</option>
+            </select>
+            <button type="submit" class="btn-add">Tambah Transaksi</button>
+        </form>
+
+        <table id="finance-table">
+            <thead>
+                <tr>
+                    <th>Tanggal & Waktu</th>
+                    <th>Deskripsi</th>
+                    <th>Jumlah</th>
+                    <th>Jenis</th>
+                    <th>Kategori</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- ===== BAGIAN DATA PELAJAR ===== -->
+    <div class="section">
+        <h2>Data Pelajar</h2>
+        <form id="student-form">
+            <input type="hidden" id="student-id">
+            
+            <label>Nama Lengkap</label>
+            <input type="text" id="student-name" required>
+
+            <label>NIS</label>
+            <input type="text" id="student-nis" required>
+
+            <label>Kelas</label>
+            <input type="text" id="student-class" required>
+            
+            <label>No. Telepon</label>
+            <input type="tel" id="student-phone">
+
+            <button type="submit" class="btn-add" id="student-submit-btn">Tambah Data</button>
+            <button type="button" class="btn-update hidden" id="student-update-btn">Update Data</button>
+            <button type="button" class="btn-cancel hidden" id="student-cancel-btn">Batal</button>
+        </form>
+
+        <table id="student-table">
+            <thead>
+                <tr>
+                    <th>Tanggal & Waktu</th>
+                    <th>No</th>
+                    <th>Nama</th>
+                    <th>NIS</th>
+                    <th>Kelas</th>
+                    <th>No. Telepon</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- ===== BAGIAN SOSIAL MEDIA OWNER ===== -->
+    <div class="section">
+        <h2>Follow Owner</h2>
+        <p style="text-align:center;">Silakan follow / hubungi owner melalui sosial media berikut:</p>
+
+        <div class="social-links">
+            <a class="ig"   href="https://instagram.com/Fahjoo_"   target="_blank">Instagram</a>
+            <a class="gh"   href="https://github.com/YamNo"      target="_blank">GitHub</a>
+            <a class="wa"   href="https://wa.me/6285967238651"           target="_blank">WhatsApp</a>
+            <a class="mail" href="mailto:arfahputra25@gmail.com"          target="_blank">Email</a>
+        </div>
+    </div>
+</div>
+
+<script>
+// ---------- KEUANGAN ----------
+const financeForm = document.getElementById('finance-form');
+const financeTable = document.getElementById('finance-table').querySelector('tbody');
+const totalIncomeEl = document.getElementById('total-income');
+const totalExpenseEl = document.getElementById('total-expense');
+const totalBalanceEl = document.getElementById('total-balance');
+
+let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+
+function calculateTotals() {
+    const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    totalIncomeEl.textContent = `Rp ${income.toLocaleString()}`;
+    totalExpenseEl.textContent = `Rp ${expense.toLocaleString()}`;
+    totalBalanceEl.textContent = `Rp ${(income - expense).toLocaleString()}`;
+    return { income, expense, balance: income - expense };
+}
+
+function renderTransactions() {
+    financeTable.innerHTML = '';
+    transactions.forEach((t, idx) => {
+        const row = `
+            <tr>
+                <td>${t.dateTime}</td>
+                <td>${t.description}</td>
+                <td>Rp ${t.amount.toLocaleString()}</td>
+                <td>${t.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</td>
+                <td>${t.category === 'uang' ? 'Uang' : 'Barang'}</td>
+                <td>
+                    <button class="btn-delete" onclick="deleteTransaction(${idx})">Hapus</button>
+                </td>
+            </tr>`;
+        financeTable.insertAdjacentHTML('beforeend', row);
+    });
+}
+
+financeForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const desc = document.getElementById('finance-description').value;
+    const amount = +document.getElementById('finance-amount').value;
+    const type = document.getElementById('finance-type').value;
+    const cat = document.getElementById('finance-category').value;
+
+    if (type === 'expense') {
+        const { balance } = calculateTotals();
+        if (balance < amount) {
+            alert('Saldo tidak cukup!');
+            return;
+        }
+    }
+
+    transactions.push({
+        dateTime: new Date().toLocaleString('id-ID'),
+        description: desc,
+        amount,
+        type,
+        category: cat
+    });
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    renderTransactions();
+    calculateTotals();
+    financeForm.reset();
+});
+
+function deleteTransaction(idx) {
+    if (confirm('Hapus transaksi?')) {
+        transactions.splice(idx, 1);
+        localStorage.setItem('transactions', JSON.stringify(transactions));
+        renderTransactions();
+        calculateTotals();
+    }
+}
+
+// ---------- DATA PELAJAR ----------
+const studentForm = document.getElementById('student-form');
+const studentTable = document.getElementById('student-table').querySelector('tbody');
+const stSubmitBtn = document.getElementById('student-submit-btn');
+const stUpdateBtn = document.getElementById('student-update-btn');
+const stCancelBtn = document.getElementById('student-cancel-btn');
+
+let students = JSON.parse(localStorage.getItem('students')) || [];
+let editStIdx = -1;
+
+function renderStudents() {
+    studentTable.innerHTML = '';
+    students.forEach((s, idx) => {
+        const row = `
+            <tr>
+                <td>${s.dateTime}</td>
+                <td>${idx + 1}</td>
+                <td>${s.name}</td>
+                <td>${s.nis}</td>
+                <td>${s.class}</td>
+                <td>${s.phone || '-'}</td>
+                <td>
+                    <button class="btn-edit" onclick="editStudent(${idx})">Edit</button>
+                    <button class="btn-delete" onclick="deleteStudent(${idx})">Hapus</button>
+                </td>
+            </tr>`;
+        studentTable.insertAdjacentHTML('beforeend', row);
+    });
+}
+
+studentForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('student-name').value;
+    const nis = document.getElementById('student-nis').value;
+    const cls = document.getElementById('student-class').value;
+    const phone = document.getElementById('student-phone').value;
+
+    if (editStIdx === -1) {
+        students.push({
+            dateTime: new Date().toLocaleString('id-ID'),
+            name, nis, class: cls, phone
+        });
+    } else {
+        students[editStIdx] = { ...students[editStIdx], name, nis, class: cls, phone };
+        resetStudentForm();
+    }
+    localStorage.setItem('students', JSON.stringify(students));
+    renderStudents();
+    studentForm.reset();
+});
+
+function editStudent(i) {
+    editStIdx = i;
+    const s = students[i];
+    ['name', 'nis', 'class', 'phone'].forEach(k => document.getElementById(`student-${k}`).value = s[k]);
+    stSubmitBtn.classList.add('hidden');
+    stUpdateBtn.classList.remove('hidden');
+    stCancelBtn.classList.remove('hidden');
+}
+stUpdateBtn.addEventListener('click', () => studentForm.dispatchEvent(new Event('submit')));
+stCancelBtn.addEventListener('click', resetStudentForm);
+
+function resetStudentForm() {
+    editStIdx = -1;
+    studentForm.reset();
+    stSubmitBtn.classList.remove('hidden');
+    stUpdateBtn.classList.add('hidden');
+    stCancelBtn.classList.add('hidden');
+}
+function deleteStudent(i) {
+    if (confirm('Hapus data pelajar?')) {
+        students.splice(i, 1);
+        localStorage.setItem('students', JSON.stringify(students));
+        renderStudents();
+        if (editStIdx === i) resetStudentForm();
+    }
+}
+
+// init
+renderTransactions();
+calculateTotals();
+renderStudents();
+</script>
+
+</body>
+</html>
